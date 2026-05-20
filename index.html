@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>NAWEMEDIA — Presupuesto V7</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#05070D}
+body{font-family:'Sora',-apple-system,BlinkMacSystemFont,sans-serif;color:#F1F5F9;min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+input,textarea,button,select{font-family:inherit}
+input::placeholder,textarea::placeholder{color:#475569}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.5)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn 0.25s ease-out both}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+
+/* Tweaks panel styles */
+.twk-panel{position:fixed;right:16px;bottom:16px;z-index:9999;width:280px;max-height:calc(100vh - 32px);display:flex;flex-direction:column;background:rgba(16,19,34,0.95);color:#F1F5F9;backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.12);border-radius:16px;box-shadow:0 0 40px rgba(0,0,0,0.6),0 0 0 1px rgba(255,45,149,0.15);font-family:'Sora',sans-serif;overflow:hidden}
+.twk-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 12px 12px 16px;cursor:move;user-select:none;border-bottom:1px solid rgba(255,255,255,0.06)}
+.twk-hd b{font-size:12px;font-weight:700;letter-spacing:0.05em;background:linear-gradient(90deg,#FF2D95,#FFC300);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.twk-x{appearance:none;border:0;background:transparent;color:rgba(255,255,255,0.4);width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center}
+.twk-x:hover{background:rgba(255,255,255,0.08);color:#F1F5F9}
+.twk-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-height:0}
+.twk-sect{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);padding:8px 0 0}
+.twk-row{display:flex;flex-direction:column;gap:5px}
+.twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+.twk-lbl{font-size:12px;font-weight:500;color:rgba(255,255,255,0.6)}
+.twk-toggle{position:relative;width:34px;height:19px;border:0;border-radius:999px;background:rgba(255,255,255,0.12);transition:background .15s;cursor:pointer;padding:0;flex-shrink:0}
+.twk-toggle[data-on="1"]{background:#22C55E}
+.twk-toggle i{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:transform .15s;display:block}
+.twk-toggle[data-on="1"] i{transform:translateX(15px)}
+.twk-swatch{appearance:none;width:52px;height:24px;border:1px solid rgba(255,255,255,0.15);border-radius:7px;padding:0;cursor:pointer;background:transparent;flex-shrink:0}
+.twk-swatch::-webkit-color-swatch-wrapper{padding:0}
+.twk-swatch::-webkit-color-swatch{border:0;border-radius:6px}
+.twk-btn-tweak{appearance:none;height:28px;padding:0 12px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;background:rgba(255,255,255,0.06);color:#F1F5F9;font-size:11px;font-weight:600;cursor:pointer;width:100%;font-family:'Sora',sans-serif}
+.twk-btn-tweak:hover{background:rgba(255,255,255,0.1)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
+const T = {
+  bg:        '#05070D',
+  bgSurf:    '#0B0E18',
+  bgCard:    '#101322',
+  bgCardHov: '#141827',
+  bgInset:   'rgba(0,0,0,0.45)',
+  border:    'rgba(255,255,255,0.06)',
+  borderMd:  'rgba(255,255,255,0.10)',
+  borderHi:  'rgba(255,255,255,0.18)',
+  gradMain:  'linear-gradient(90deg,#FF2D95 0%,#FF5C39 45%,#FFC300 100%)',
+  gradSec:   'linear-gradient(90deg,#FF2D95 0%,#7B61FF 50%,#00E5FF 100%)',
+  gradBtn:   'linear-gradient(90deg,#FF2D95 0%,#FF5C39 50%,#FFC300 100%)',
+  magenta:   '#FF2D95',
+  violet:    '#7B61FF',
+  cyan:      '#00E5FF',
+  orange:    '#FF7A00',
+  yellow:    '#FFC300',
+  green:     '#22C55E',
+  red:       '#EF4444',
+  text:      '#F1F5F9',
+  textMd:    '#CBD5E1',
+  textMut:   '#8B95AA',
+  textFnt:   '#475569',
+  radius:    16,
+  radiusSm:  10,
+  radiusLg:  20,
+};
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const RATES = {
+  USD:{code:'USD',flag:'🇺🇸',rate:0.00115},
+  EUR:{code:'EUR',flag:'🇪🇺',rate:0.00106},
+  BRL:{code:'BRL',flag:'🇧🇷',rate:0.00588},
+  COP:{code:'COP',flag:'🇨🇴',rate:4.6},
+  PEN:{code:'PEN',flag:'🇵🇪',rate:0.00426},
+  ARS:{code:'ARS',flag:'🇦🇷',rate:1.15},
+};
+
+const COUPONS = {
+  'NUEVO10':      {label:'Nuevo cliente',     discount:10},
+  'RECURRENTE15': {label:'Cliente recurrente', discount:15},
+  'GRANDE20':     {label:'Pedido grande',      discount:20},
+  'ADELANT10':    {label:'Pago anticipado',    discount:10},
+};
+
+const CONDITIONS = `1. ALCANCE DEL TRABAJO
+Los servicios detallados son los únicos incluidos. Cualquier entregable adicional será presupuestado por separado.
+
+2. REVISIONES
+Se incluye una (1) revisión por cada pieza. Revisiones adicionales podrán presupuestarse aparte.
+
+3. FORMA DE PAGO
+Pago al inicio del trabajo. Métodos: Vita Wallet · PayPal · Prex · Transferencia · Efectivo.
+
+4. ENTREGA DE MATERIAL
+El material del cliente debe entregarse antes de iniciar. Demoras pueden afectar plazos.
+
+5. CALIDAD Y ESTILO
+NAWEMEDIA entrega piezas de calidad cinematográfica con animaciones de alto impacto.
+
+6. PROPIEDAD Y USO
+Una vez abonado el total, el cliente recibe los archivos finales. NAWEMEDIA podrá usar las piezas en su portafolio.
+
+7. CANCELACIONES
+No se realizan devoluciones por trabajo ya ejecutado.
+
+8. ACEPTACIÓN
+La firma digital implica aceptación plena de servicios, valores y condiciones.`;
+
+const CATALOG = [
+  {id:'redes',title:'Redes',desc:'Crecé y dominá tus redes',icon:'redes',gradient:'linear-gradient(135deg,#FF2D95,#7B61FF)',services:[
+    {id:'r1',nombre:'Diagnóstico Instagram',desc:'Análisis y optimización del perfil.',precio:50000},
+    {id:'r2',nombre:'Gestión inicial de redes',desc:'Configuración y piezas listas para publicar.',precio:80000},
+    {id:'r3',nombre:'Gestión completa',desc:'Campaña, contenido y seguimiento mensual.',precio:120000},
+    {id:'r4',nombre:'Imagen + Presencia',desc:'Identidad visual unificada en todas las plataformas.',precio:130000},
+  ]},
+  {id:'eventos',title:'Eventos',desc:'Diseños y videos para eventos',icon:'eventos',gradient:'linear-gradient(135deg,#FF5C39,#FFC300)',services:[
+    {id:'e1',nombre:'Flyer estático',desc:'Diseño de flyer con identidad visual.',precio:30000},
+    {id:'e2',nombre:'Flyer animado / Reel',desc:'Video corto de alto impacto para redes.',precio:60000},
+    {id:'e3',nombre:'Campaña completa evento',desc:'Flyer + reel + historias.',precio:120000},
+    {id:'e4',nombre:'Versión adicional',desc:'Variante de diseño o video existente.',precio:25000},
+  ]},
+  {id:'led',title:'Visuales LED',desc:'Visuales impactantes en pantallas',icon:'led',gradient:'linear-gradient(135deg,#7B61FF,#00E5FF)',services:[
+    {id:'l1',nombre:'Logo o título animado',desc:'Animación de logo o título 3D.',precio:40000},
+    {id:'l2',nombre:'Pack visual LED',desc:'Pack de animaciones LED totales.',precio:80000},
+    {id:'l3',nombre:'Experiencia visual full',desc:'Contenido visual completo para pantallas LED.',precio:150000},
+    {id:'l4',nombre:'Entrega urgente 24h',desc:'Producción y entrega prioritaria en 24 horas.',precio:50000},
+  ]},
+  {id:'campana',title:'Campaña completa',desc:'Solución integral para tu marca',icon:'campana',gradient:'linear-gradient(135deg,#FF2D95,#FF7A00)',services:[
+    {id:'c1',nombre:'Diagnóstico + Plan',desc:'Análisis de negocio y plan de acción personalizado.',precio:75000},
+    {id:'c2',nombre:'Campaña Starter',desc:'Diseño + gestión inicial 30 días.',precio:180000},
+    {id:'c3',nombre:'Campaña Full',desc:'Gestión completa, contenido y seguimiento mensual.',precio:250000},
+  ]},
+  {id:'personalizado',title:'Personalizado',desc:'Contanos tu idea, lo hacemos real',icon:'personalizado',gradient:'linear-gradient(135deg,#00E5FF,#7B61FF)',services:[]},
+];
+
+const LS_KEY = 'nw_budget_v7';
+const fmt = (n) => `CLP$${Number(n).toLocaleString('es-CL')}`;
+const fmtFx = (clp, key) => { const r=RATES[key]; const v=clp*r.rate; return v.toLocaleString('es-CL',{maximumFractionDigits:v<10?2:0}); };
+const loadState = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)||'null'); } catch { return null; } };
+const saveState = (s) => { try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch {} };
+const generarWhatsApp = (state) => {
+  const sub=state.items.reduce((s,i)=>s+i.precio*(i.qty||1),0);
+  const d=state.descuento.valor>0?sub*(state.descuento.valor/100):0;
+  const tot=sub-d;
+  const items=state.items.map(i=>`• ${i.nombre}: ${fmt(i.precio*(i.qty||1))}`).join('\n');
+  const msg=`Hola NAWEMEDIA 👋\n\nAcabo de generar mi presupuesto:\n\nCliente: ${state.cliente.nombre}\n\nServicios:\n${items}\n\nTOTAL: ${fmt(tot)}\n\n¿Podemos hablar?`;
+  return `https://wa.me/56959985061?text=${encodeURIComponent(msg)}`;
+};
+
+const DEFAULT_STATE = {
+  cliente:{nombre:'',empresa:'',fecha:new Date().toISOString().split('T')[0],email:''},
+  items:[],
+  descuento:{label:'',valor:0,codigo:''},
+  nota:'',
+};
+
+// ─── ICONS ────────────────────────────────────────────────────────────────────
+const ICONS = {
+  redes:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+  eventos:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  led:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>,
+  campana:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+  personalizado:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>,
+  arrow:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
+  back:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+  check:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  plus:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  minus:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  close:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  menu:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+  whatsapp:<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.013.496 3.916 1.372 5.594L0 24l6.584-1.342A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.01-1.372l-.36-.213-3.906.796.816-3.784-.235-.378A9.818 9.818 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182c5.43 0 9.818 4.388 9.818 9.818 0 5.43-4.388 9.818-9.818 9.818z"/></svg>,
+  download:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+  pay:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+};
+
+const Ico = ({name,size=20,color='currentColor',style={}}) => (
+  <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,color,flexShrink:0,...style}}>
+    {ICONS[name]||ICONS.close}
+  </span>
+);
+
+const SvcIcon = ({icon,gradient,size=44}) => (
+  <div style={{width:size,height:size,borderRadius:12,flexShrink:0,background:gradient||T.gradMain,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 14px rgba(255,45,149,0.22)',color:'#fff'}}>
+    <Ico name={icon} size={size*0.47}/>
+  </div>
+);
+
+// ─── WAVEFORM ─────────────────────────────────────────────────────────────────
+const Waveform = ({width=96,height=10}) => {
+  const bars = Array.from({length:20},(_,i)=>4+Math.abs(Math.sin(i*0.85+1.2))*(height-5));
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{opacity:0.65}}>
+      <defs><linearGradient id="wg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FF2D95"/><stop offset="50%" stopColor="#7B61FF"/><stop offset="100%" stopColor="#00E5FF"/></linearGradient></defs>
+      {bars.map((h,i)=><rect key={i} x={i*(width/20)} y={(height-h)/2} width={Math.max(2,width/20-1)} height={h} rx="1.5" fill="url(#wg)"/>)}
+    </svg>
+  );
+};
+
+// ─── BASE COMPONENTS ─────────────────────────────────────────────────────────
+
+const AppHeader = ({onMenuClick}) => (
+  <div style={{position:'sticky',top:0,zIndex:100,background:'rgba(5,7,13,0.95)',backdropFilter:'blur(20px)',borderBottom:`1px solid ${T.border}`,padding:'0 16px'}}>
+    <div style={{maxWidth:480,margin:'0 auto',height:56,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <div style={{width:36,height:36,borderRadius:10,background:T.gradMain,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 12px rgba(255,45,149,0.4)'}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+        </div>
+        <div>
+          <div style={{fontSize:14,fontWeight:800,color:T.text,letterSpacing:'0.06em',lineHeight:1}}>NAWEMEDIA</div>
+          <Waveform/>
+        </div>
+      </div>
+      <button onClick={onMenuClick} style={{background:'none',border:'none',cursor:'pointer',color:T.textMut,padding:6,display:'flex',alignItems:'center'}}>
+        <Ico name="menu" size={22}/>
+      </button>
+    </div>
+  </div>
+);
+
+const StepperProgress = ({step}) => {
+  const steps=['Servicios','Cotización','Listo'];
+  return (
+    <div style={{maxWidth:480,margin:'0 auto',padding:'14px 24px 8px',display:'flex',alignItems:'center'}}>
+      {steps.map((s,i)=>(
+        <React.Fragment key={s}>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5}}>
+            <div style={{width:28,height:28,borderRadius:'50%',background:i<=step?T.gradMain:T.bgCard,border:i<=step?'none':`1px solid ${T.borderMd}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:i<=step?'#fff':T.textFnt,boxShadow:i===step?'0 0 12px rgba(255,45,149,0.5)':'none',transition:'all 0.3s',flexShrink:0}}>
+              {i<step?<Ico name="check" size={13}/>:i+1}
+            </div>
+            <div style={{fontSize:10,fontWeight:i===step?700:500,color:i===step?T.text:T.textFnt,letterSpacing:'0.04em',whiteSpace:'nowrap'}}>{s}</div>
+          </div>
+          {i<steps.length-1&&<div style={{flex:1,height:1,background:i<step?T.gradMain:T.border,margin:'0 6px',marginBottom:18,transition:'background 0.3s'}}/>}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+};
+
+const GradBtn = ({children,onClick,disabled,style={},variant='primary',size='md'}) => {
+  const [hov,setHov]=React.useState(false);
+  const sz={sm:{padding:'8px 14px',fontSize:12,borderRadius:10},md:{padding:'13px 20px',fontSize:14,borderRadius:14},lg:{padding:'15px 24px',fontSize:15,borderRadius:16}}[size]||{padding:'13px 20px',fontSize:14,borderRadius:14};
+  const base={...sz,fontWeight:700,fontFamily:'inherit',cursor:disabled?'not-allowed':'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,transition:'all 0.2s',border:'none',...style};
+  if(variant==='secondary') return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{...base,background:hov?T.bgCardHov:'transparent',border:`1px solid ${T.borderHi}`,color:T.text,opacity:disabled?0.4:1}}>{children}</button>;
+  if(variant==='success') return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{...base,background:hov?'rgba(34,197,94,0.2)':'rgba(34,197,94,0.08)',border:`1px solid rgba(34,197,94,0.4)`,color:T.green,opacity:disabled?0.4:1}}>{children}</button>;
+  if(variant==='add') return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{...base,background:T.gradBtn,color:'#fff',opacity:disabled?0.45:1,boxShadow:hov?'0 0 18px rgba(255,45,149,0.45)':'0 0 8px rgba(255,45,149,0.18)'}}>{children}</button>;
+  return <button onClick={onClick} disabled={disabled} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{...base,width:'100%',background:disabled?T.bgCard:T.gradBtn,color:disabled?T.textFnt:'#fff',boxShadow:!disabled&&hov?'0 0 24px rgba(255,45,149,0.5)':!disabled?'0 0 10px rgba(255,45,149,0.22)':'none'}}>{children}</button>;
+};
+
+const InputField = ({label,value,onChange,type='text',placeholder='',multi=false,error=false}) => {
+  const [focused,setFocused]=React.useState(false);
+  const borderColor=error?T.red:focused?T.cyan:T.borderMd;
+  const base={width:'100%',background:T.bgInset,border:`1px solid ${borderColor}`,borderRadius:T.radiusSm,padding:'11px 14px',color:T.text,fontSize:14,outline:'none',fontFamily:'inherit',transition:'border-color 0.2s',boxSizing:'border-box',boxShadow:focused?'0 0 0 3px rgba(0,229,255,0.07)':'none'};
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:6}}>
+      {label&&<label style={{fontSize:10,fontWeight:700,color:T.textFnt,textTransform:'uppercase',letterSpacing:'0.14em'}}>{label}</label>}
+      {multi
+        ?<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={3} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} style={{...base,resize:'vertical',lineHeight:1.6}}/>
+        :<input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} style={base}/>
+      }
+    </div>
+  );
+};
+
+const Badge = ({children,variant='default'}) => {
+  const v={default:{bg:'rgba(255,255,255,0.06)',color:T.textMut,border:T.border},success:{bg:'rgba(34,197,94,0.12)',color:T.green,border:'rgba(34,197,94,0.3)'},warning:{bg:'rgba(255,195,0,0.12)',color:T.yellow,border:'rgba(255,195,0,0.3)'},progress:{bg:'rgba(0,229,255,0.12)',color:T.cyan,border:'rgba(0,229,255,0.3)'}}[variant]||{bg:'rgba(255,255,255,0.06)',color:T.textMut,border:T.border};
+  return <span style={{background:v.bg,color:v.color,border:`1px solid ${v.border}`,borderRadius:20,padding:'4px 12px',fontSize:11,fontWeight:700,display:'inline-flex',alignItems:'center',gap:5}}>{children}</span>;
+};
+
+const CurrencyChips = ({totalCLP}) => (
+  <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${T.border}`}}>
+    <div style={{fontSize:10,fontWeight:700,color:T.textFnt,textTransform:'uppercase',letterSpacing:'0.14em',marginBottom:8}}>Equivalente aproximado</div>
+    <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+      {Object.entries(RATES).map(([key,r])=>(
+        <div key={key} style={{background:T.bgInset,border:`1px solid ${T.border}`,borderRadius:20,padding:'5px 10px',fontSize:11,color:T.textMut,display:'flex',alignItems:'center',gap:5,whiteSpace:'nowrap'}}>
+          <span style={{fontSize:13}}>{r.flag}</span>
+          <span style={{fontWeight:700,color:T.textMd}}>{fmtFx(totalCLP,key)}</span>
+          <span style={{color:T.textFnt}}>{key}</span>
+        </div>
+      ))}
+    </div>
+    <div style={{fontSize:10,color:T.textFnt,marginTop:6}}>* Tasas orientativas · Los valores reales pueden variar</div>
+  </div>
+);
+
+const PriceSummary = ({subtotal,discount,discountLabel,total,showCurrency=false}) => (
+  <div style={{background:T.bgInset,borderRadius:T.radius,padding:'14px 16px'}}>
+    <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:T.textMut,marginBottom:8}}><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
+    {discount>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:T.green,marginBottom:8}}><span>{discountLabel}</span><span>− {fmt(discount)}</span></div>}
+    <div style={{display:'flex',justifyContent:'space-between',fontSize:20,fontWeight:900,borderTop:`1px solid ${T.borderMd}`,paddingTop:12,marginTop:4}}>
+      <span style={{color:T.textMd}}>TOTAL</span>
+      <span style={{color:T.yellow,letterSpacing:'-0.02em'}}>{fmt(total)}</span>
+    </div>
+    {showCurrency&&<CurrencyChips totalCLP={total}/>}
+  </div>
+);
+
+const StickyFooter = ({total,btnLabel,onBtn,disabled}) => (
+  <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:50,background:'rgba(5,7,13,0.97)',backdropFilter:'blur(20px)',borderTop:`1px solid ${T.border}`,padding:'12px 16px'}}>
+    <div style={{maxWidth:480,margin:'0 auto',display:'flex',alignItems:'center',gap:14}}>
+      <div style={{flexShrink:0}}>
+        <div style={{fontSize:10,fontWeight:700,color:T.textFnt,textTransform:'uppercase',letterSpacing:'0.1em'}}>Total actual</div>
+        <div style={{fontSize:20,fontWeight:900,color:T.yellow}}>{fmt(total)}</div>
+      </div>
+      <GradBtn onClick={onBtn} disabled={disabled} style={{flex:1}}>
+        {btnLabel} <Ico name="arrow" size={16}/>
+      </GradBtn>
+    </div>
+  </div>
+);
+
+const InfoBanner = ({icon,title,price,onClose}) => (
+  <div style={{background:'rgba(123,97,255,0.08)',border:`1px solid rgba(123,97,255,0.28)`,borderRadius:T.radius,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+    <SvcIcon icon={icon} gradient="linear-gradient(135deg,#7B61FF,#00E5FF)" size={40}/>
+    <div style={{flex:1}}>
+      <div style={{fontSize:12,fontWeight:700,color:T.text,marginBottom:2}}>{title}</div>
+      <div style={{fontSize:11,color:T.textMut}}>Entrega expresa en un plazo de 24 horas para servicios urgentes.</div>
+    </div>
+    {price&&<div style={{fontSize:13,fontWeight:800,color:T.yellow,whiteSpace:'nowrap',flexShrink:0}}>{fmt(price)}</div>}
+    {onClose&&<button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:T.textFnt,padding:2,display:'flex',alignItems:'center'}}><Ico name="close" size={15}/></button>}
+  </div>
+);
+
+const Card = ({children,style={}}) => (
+  <div style={{background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:T.radiusLg,padding:16,...style}}>{children}</div>
+);
+
+const SectionLabel = ({children}) => (
+  <div style={{fontSize:10,fontWeight:700,color:T.textFnt,textTransform:'uppercase',letterSpacing:'0.14em',marginBottom:12}}>{children}</div>
+);
+
+// ─── SCREEN: SERVICIOS ────────────────────────────────────────────────────────
+const ServiciosScreen = ({selectedItems,onCatSelect}) => {
+  const [bannerVisible,setBannerVisible]=React.useState(true);
+  return (
+    <div className="fade-in" style={{maxWidth:480,margin:'0 auto',padding:'20px 16px 110px'}}>
+      <div style={{marginBottom:22}}>
+        <h1 style={{fontSize:24,fontWeight:800,color:T.text,margin:'0 0 6px',lineHeight:1.2}}>¿Qué necesitás hoy?</h1>
+        <p style={{fontSize:13,color:T.textMut,margin:0,lineHeight:1.5}}>Armá tu presupuesto en menos de 2 minutos.</p>
+      </div>
+      {bannerVisible&&<InfoBanner icon="led" title="Lo necesitás para mañana" price={50000} onClose={()=>setBannerVisible(false)}/>}
+      <div style={{display:'flex',flexDirection:'column',gap:10}}>
+        {CATALOG.map(cat=>{
+          const [hov,setHov]=React.useState(false);
+          return (
+            <button key={cat.id} onClick={()=>onCatSelect(cat)} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+              style={{width:'100%',background:hov?T.bgCardHov:T.bgCard,border:`1px solid ${hov?T.borderHi:T.border}`,borderRadius:T.radiusLg,padding:'14px 16px',display:'flex',alignItems:'center',gap:14,cursor:'pointer',transition:'all 0.2s',textAlign:'left',boxShadow:hov?'0 0 20px rgba(255,45,149,0.1)':'none'}}>
+              <SvcIcon icon={cat.icon} gradient={cat.gradient} size={48}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:15,fontWeight:700,color:T.text,marginBottom:3}}>{cat.title}</div>
+                <div style={{fontSize:12,color:T.textMut,lineHeight:1.4}}>{cat.desc}</div>
+              </div>
+              <Ico name="arrow" size={18} color={T.textFnt}/>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ─── SCREEN: CATEGORÍA ────────────────────────────────────────────────────────
+const CategoriaScreen = ({cat,selectedItems,onAdd,onBack}) => {
+  const isAdded=(id)=>selectedItems.some(i=>i.id===id);
+  const [nombre,setNombre]=React.useState('');
+  const [precio,setPrecio]=React.useState('');
+  const [desc,setDesc]=React.useState('');
+  const [added,setAdded]=React.useState(false);
+  const handleAddCustom=()=>{
+    if(!nombre.trim()||!precio) return;
+    onAdd({id:'c_'+Date.now(),nombre,desc,precio:parseFloat(precio)||0,catId:'personalizado'});
+    setNombre('');setPrecio('');setDesc('');
+    setAdded(true);setTimeout(()=>setAdded(false),2000);
+  };
+  return (
+    <div className="fade-in" style={{maxWidth:480,margin:'0 auto',padding:'16px 16px 110px'}}>
+      <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',color:T.textMut,display:'flex',alignItems:'center',gap:6,fontSize:13,marginBottom:20,padding:0}}>
+        <Ico name="back" size={16}/> Volver
+      </button>
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:6}}>
+        <SvcIcon icon={cat.icon} gradient={cat.gradient} size={48}/>
+        <div>
+          <h2 style={{fontSize:20,fontWeight:800,color:T.text,margin:'0 0 3px'}}>{cat.title}</h2>
+          <p style={{fontSize:12,color:T.textMut,margin:0}}>{cat.desc}</p>
+        </div>
+      </div>
+      <p style={{fontSize:13,color:T.textFnt,marginBottom:20,marginTop:4}}>Elegí el servicio que mejor se adapte a vos.</p>
+      {cat.id==='personalizado'?(
+        <Card>
+          <SectionLabel>Algo a medida</SectionLabel>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
+            <InputField label="Nombre del servicio" value={nombre} onChange={setNombre} placeholder="Pack especial"/>
+            <InputField label="Precio (CLP)" type="number" value={precio} onChange={setPrecio} placeholder="0"/>
+          </div>
+          <div style={{marginBottom:16}}><InputField label="Descripción (opcional)" value={desc} onChange={setDesc} placeholder="Detalle del servicio..."/></div>
+          {added
+            ?<GradBtn variant="success" style={{width:'100%'}}><Ico name="check" size={15}/> Servicio agregado</GradBtn>
+            :<GradBtn variant="add" onClick={handleAddCustom} disabled={!nombre.trim()||!precio} style={{width:'100%'}}><Ico name="plus" size={15}/> Agregar servicio</GradBtn>
+          }
+        </Card>
+      ):(
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {cat.services.map(svc=>{
+            const added2=isAdded(svc.id);
+            const [hov,setHov]=React.useState(false);
+            return (
+              <div key={svc.id} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+                style={{background:added2?'rgba(34,197,94,0.05)':hov?T.bgCardHov:T.bgCard,border:`1px solid ${added2?'rgba(34,197,94,0.3)':hov?T.borderHi:T.border}`,borderRadius:T.radius,padding:'14px 16px',display:'flex',alignItems:'center',gap:14,transition:'all 0.2s',boxShadow:hov&&!added2?'0 0 16px rgba(255,45,149,0.08)':'none'}}>
+                <SvcIcon icon={cat.icon} gradient={cat.gradient} size={44}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700,color:added2?T.green:T.text,marginBottom:3}}>{svc.nombre}</div>
+                  <div style={{fontSize:11,color:T.textMut,lineHeight:1.4,marginBottom:6}}>{svc.desc}</div>
+                  <div style={{fontSize:14,fontWeight:800,color:T.yellow}}>Desde {fmt(svc.precio)}</div>
+                </div>
+                {added2
+                  ?<GradBtn variant="success" size="sm" style={{flexShrink:0,pointerEvents:'none'}}><Ico name="check" size={13}/> Listo</GradBtn>
+                  :<GradBtn variant="add" size="sm" onClick={()=>onAdd({...svc,catId:cat.id})} style={{flexShrink:0}}>+ Agregar</GradBtn>
+                }
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── SCREEN: COTIZACIÓN ───────────────────────────────────────────────────────
+const CotizacionScreen = ({state,setState,onBack}) => {
+  const [couponCode,setCouponCode]=React.useState(state.descuento.codigo||'');
+  const [couponError,setCouponError]=React.useState(false);
+  const [showCustom,setShowCustom]=React.useState(false);
+  const [custom,setCustom]=React.useState({nombre:'',precio:'',desc:''});
+  const subtotal=state.items.reduce((s,i)=>s+i.precio*(i.qty||1),0);
+  const discAmt=state.descuento.valor>0?subtotal*(state.descuento.valor/100):0;
+  const total=subtotal-discAmt;
+  const removeItem=(id)=>setState(p=>({...p,items:p.items.filter(i=>i.id!==id)}));
+  const setQty=(id,v)=>setState(p=>({...p,items:p.items.map(i=>i.id===id?{...i,qty:Math.max(1,v)}:i)}));
+  const applyCoupon=()=>{
+    const code=couponCode.toUpperCase().trim();
+    if(COUPONS[code]){setState(p=>({...p,descuento:{label:`${COUPONS[code].label} (${COUPONS[code].discount}%)`,valor:COUPONS[code].discount,codigo:code}}));setCouponError(false);}
+    else setCouponError(true);
+  };
+  const removeCoupon=()=>{setCouponCode('');setCouponError(false);setState(p=>({...p,descuento:{label:'',valor:0,codigo:''}}));};
+  const addCustom=()=>{
+    if(!custom.nombre.trim()||!custom.precio) return;
+    setState(p=>({...p,items:[...p.items,{id:'c_'+Date.now(),nombre:custom.nombre,desc:custom.desc,precio:parseFloat(custom.precio)||0,qty:1,catId:'personalizado'}]}));
+    setCustom({nombre:'',precio:'',desc:''});setShowCustom(false);
+  };
+  return (
+    <div className="fade-in" style={{maxWidth:480,margin:'0 auto',padding:'16px 16px 110px'}}>
+      <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',color:T.textMut,display:'flex',alignItems:'center',gap:6,fontSize:13,marginBottom:20,padding:0}}>
+        <Ico name="back" size={16}/> Volver
+      </button>
+      <div style={{marginBottom:20}}>
+        <h2 style={{fontSize:22,fontWeight:800,color:T.text,margin:'0 0 6px'}}>Lo que hacemos juntos</h2>
+        <p style={{fontSize:13,color:T.textMut,margin:0}}>Revisá y personalizá tu presupuesto.</p>
+      </div>
+      <Card style={{marginBottom:12,padding:'16px 16px 0'}}>
+        <SectionLabel>Servicios seleccionados</SectionLabel>
+        {state.items.length===0
+          ?<div style={{padding:'16px 0',textAlign:'center',color:T.textFnt,fontSize:13}}>No hay servicios agregados aún.</div>
+          :state.items.map(item=>(
+            <div key={item.id} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 0',borderBottom:`1px solid ${T.border}`}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:700,color:T.text,marginBottom:2}}>{item.nombre}</div>
+                {item.desc&&<div style={{fontSize:11,color:T.textFnt,lineHeight:1.4}}>{item.desc}</div>}
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:4,flexShrink:0}}>
+                <button onClick={()=>setQty(item.id,(item.qty||1)-1)} style={{width:26,height:26,borderRadius:8,background:T.bgInset,border:`1px solid ${T.border}`,color:T.textMd,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Ico name="minus" size={13}/></button>
+                <span style={{fontSize:13,fontWeight:700,minWidth:18,textAlign:'center',color:T.text}}>{item.qty||1}</span>
+                <button onClick={()=>setQty(item.id,(item.qty||1)+1)} style={{width:26,height:26,borderRadius:8,background:T.bgInset,border:`1px solid ${T.border}`,color:T.textMd,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Ico name="plus" size={13}/></button>
+              </div>
+              <div style={{fontSize:14,fontWeight:800,color:T.yellow,minWidth:72,textAlign:'right',flexShrink:0}}>{fmt(item.precio*(item.qty||1))}</div>
+              <button onClick={()=>removeItem(item.id)} style={{background:'none',border:'none',cursor:'pointer',color:T.textFnt,padding:4,display:'flex',alignItems:'center'}}><Ico name="close" size={16}/></button>
+            </div>
+          ))
+        }
+        <div style={{padding:'12px 0'}}>
+          {!showCustom
+            ?<button onClick={()=>setShowCustom(true)} style={{background:'none',border:`1px dashed ${T.borderHi}`,borderRadius:T.radiusSm,padding:'10px 16px',color:T.magenta,cursor:'pointer',fontSize:13,fontWeight:700,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,fontFamily:'inherit'}}>
+                <Ico name="plus" size={15} color={T.magenta}/> Agregar servicio personalizado
+              </button>
+            :<div style={{background:T.bgInset,borderRadius:T.radiusSm,padding:14,display:'flex',flexDirection:'column',gap:10}}>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                  <InputField label="Nombre" value={custom.nombre} onChange={v=>setCustom(p=>({...p,nombre:v}))} placeholder="Pack especial"/>
+                  <InputField label="Precio CLP" type="number" value={custom.precio} onChange={v=>setCustom(p=>({...p,precio:v}))} placeholder="0"/>
+                </div>
+                <InputField label="Descripción" value={custom.desc} onChange={v=>setCustom(p=>({...p,desc:v}))} placeholder="Detalle..."/>
+                <div style={{display:'flex',gap:8}}>
+                  <GradBtn variant="add" onClick={addCustom} disabled={!custom.nombre||!custom.precio} style={{flex:1}}><Ico name="plus" size={14}/> Agregar</GradBtn>
+                  <GradBtn variant="secondary" onClick={()=>setShowCustom(false)} style={{padding:'10px 14px'}}>Cancelar</GradBtn>
+                </div>
+              </div>
+          }
+        </div>
+      </Card>
+      <Card style={{marginBottom:12}}>
+        <SectionLabel>Código de descuento</SectionLabel>
+        {state.descuento.valor>0
+          ?<div style={{display:'flex',alignItems:'center',gap:8}}><Badge variant="success"><Ico name="check" size={12}/> {state.descuento.label}</Badge><button onClick={removeCoupon} style={{background:'none',border:'none',cursor:'pointer',color:T.textFnt,display:'flex',alignItems:'center'}}><Ico name="close" size={15}/></button></div>
+          :<><div style={{display:'flex',gap:8}}>
+              <input value={couponCode} onChange={e=>{setCouponCode(e.target.value);setCouponError(false);}} placeholder="Ingresá el código" style={{flex:1,background:T.bgInset,border:`1px solid ${couponError?T.red:T.borderMd}`,borderRadius:T.radiusSm,padding:'10px 14px',color:T.text,fontSize:13,outline:'none',fontFamily:'inherit'}}/>
+              <GradBtn variant="secondary" onClick={applyCoupon} style={{padding:'10px 16px',flexShrink:0}}>Aplicar</GradBtn>
+            </div>
+            {couponError&&<div style={{fontSize:11,color:T.red,marginTop:6}}>Código no válido. Intentá con otro.</div>}
+          </>
+        }
+      </Card>
+      <Card style={{marginBottom:12}}>
+        <PriceSummary subtotal={subtotal} discount={discAmt} discountLabel={state.descuento.label} total={total} showCurrency={true}/>
+      </Card>
+    </div>
+  );
+};
+
+// ─── SCREEN: DATOS ────────────────────────────────────────────────────────────
+const DatosScreen = ({state,setState,onContinue,onBack}) => {
+  const subtotal=state.items.reduce((s,i)=>s+i.precio*(i.qty||1),0);
+  const discAmt=state.descuento.valor>0?subtotal*(state.descuento.valor/100):0;
+  const total=subtotal-discAmt;
+  const canContinue=state.cliente.nombre.trim()&&state.cliente.fecha;
+  return (
+    <div className="fade-in" style={{maxWidth:480,margin:'0 auto',padding:'16px 16px 50px'}}>
+      <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',color:T.textMut,display:'flex',alignItems:'center',gap:6,fontSize:13,marginBottom:20,padding:0}}><Ico name="back" size={16}/> Volver</button>
+      <div style={{marginBottom:20}}>
+        <h2 style={{fontSize:22,fontWeight:800,color:T.text,margin:'0 0 6px'}}>Tus datos</h2>
+        <p style={{fontSize:13,color:T.textMut,margin:0}}>Completá la información para continuar.</p>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:10}}>
+        <Card><InputField label="Nombre" value={state.cliente.nombre} onChange={v=>setState(p=>({...p,cliente:{...p.cliente,nombre:v}}))} placeholder="Tu nombre completo"/></Card>
+        <Card><InputField label="¿De dónde venís?" value={state.cliente.empresa} onChange={v=>setState(p=>({...p,cliente:{...p.cliente,empresa:v}}))} placeholder="Tu marca o proyecto"/></Card>
+        <Card><InputField label="Fecha" type="date" value={state.cliente.fecha} onChange={v=>setState(p=>({...p,cliente:{...p.cliente,fecha:v}}))}/></Card>
+        <Card><InputField label="Correo electrónico" type="email" value={state.cliente.email} onChange={v=>setState(p=>({...p,cliente:{...p.cliente,email:v}}))} placeholder="tu@email.com"/></Card>
+        <Card><InputField label="Notas adicionales (opcional)" value={state.nota} onChange={v=>setState(p=>({...p,nota:v}))} placeholder="Fecha de entrega, condiciones especiales..." multi/></Card>
+        <Card>
+          <SectionLabel>Resumen de tu presupuesto</SectionLabel>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:T.textMut,marginBottom:6}}><span>Servicios</span><span>{state.items.length}</span></div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:T.textMut,marginBottom:16}}><span>Total estimado</span><span style={{fontWeight:800,color:T.yellow}}>{fmt(total)}</span></div>
+          <GradBtn onClick={onContinue} disabled={!canContinue} style={{width:'100%'}}>Continuar a firma <Ico name="arrow" size={16}/></GradBtn>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ─── SCREEN: FIRMA ────────────────────────────────────────────────────────────
+const FirmaScreen = ({state,onConfirm,onBack}) => {
+  const canvasRef=React.useRef(null);
+  const [drawing,setDrawing]=React.useState(false);
+  const [hasSig,setHasSig]=React.useState(false);
+  const [showConds,setShowConds]=React.useState(false);
+  const [sigName,setSigName]=React.useState(state.cliente.nombre||'');
+  const subtotal=state.items.reduce((s,i)=>s+i.precio*(i.qty||1),0);
+  const discAmt=state.descuento.valor>0?subtotal*(state.descuento.valor/100):0;
+  const total=subtotal-discAmt;
+
+  React.useEffect(()=>{
+    const canvas=canvasRef.current;if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    ctx.strokeStyle='#FFC300';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';
+    const getPos=(e)=>{const r=canvas.getBoundingClientRect();const scX=canvas.width/r.width;const scY=canvas.height/r.height;const src=e.touches?e.touches[0]:e;return{x:(src.clientX-r.left)*scX,y:(src.clientY-r.top)*scY};};
+    const start=(e)=>{e.preventDefault();setDrawing(true);const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);};
+    const move=(e)=>{e.preventDefault();if(!drawing)return;const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();setHasSig(true);};
+    const end=(e)=>{e.preventDefault();setDrawing(false);};
+    canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',move);canvas.addEventListener('mouseup',end);
+    canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',end,{passive:false});
+    return()=>{canvas.removeEventListener('mousedown',start);canvas.removeEventListener('mousemove',move);canvas.removeEventListener('mouseup',end);canvas.removeEventListener('touchstart',start);canvas.removeEventListener('touchmove',move);canvas.removeEventListener('touchend',end);};
+  },[drawing]);
+
+  const clearSig=()=>{const canvas=canvasRef.current;if(canvas)canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);setHasSig(false);};
+  const handleConfirm=()=>{
+    if(!sigName.trim()){alert('Por favor ingresá tu nombre completo.');return;}
+    if(!hasSig){alert('Por favor firmá en el recuadro.');return;}
+    const sig=canvasRef.current?.toDataURL('image/png')||'';
+    const timestamp=new Date().toLocaleString('es-AR',{dateStyle:'long',timeStyle:'short'});
+    onConfirm({sig,name:sigName,timestamp});
+  };
+
+  return (
+    <div className="fade-in" style={{maxWidth:480,margin:'0 auto',padding:'16px 16px 50px'}}>
+      <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',color:T.textMut,display:'flex',alignItems:'center',gap:6,fontSize:13,marginBottom:20,padding:0}}><Ico name="back" size={16}/> Volver</button>
+      <div style={{marginBottom:20}}>
+        <h2 style={{fontSize:22,fontWeight:800,color:T.text,margin:'0 0 6px'}}>Confirmá tu presupuesto</h2>
+        <p style={{fontSize:13,color:T.textMut,margin:0}}>Revisá los detalles y confirmá para avanzar.</p>
+      </div>
+      <Card style={{marginBottom:12}}>
+        <SectionLabel>Servicios seleccionados</SectionLabel>
+        {state.items.map(item=>(
+          <div key={item.id} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:`1px solid ${T.border}`,fontSize:13}}>
+            <span style={{color:T.textMd}}>{item.nombre}{(item.qty||1)>1?` ×${item.qty}`:''}</span>
+            <span style={{fontWeight:700,color:T.yellow}}>{fmt(item.precio*(item.qty||1))}</span>
+          </div>
+        ))}
+        <div style={{marginTop:12}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:T.textMut,marginBottom:6}}><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
+          {discAmt>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:T.green,marginBottom:6}}><span>{state.descuento.label}</span><span>− {fmt(discAmt)}</span></div>}
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:20,fontWeight:900,borderTop:`1px solid ${T.borderMd}`,paddingTop:10,marginTop:4}}><span style={{color:T.textMd}}>TOTAL</span><span style={{color:T.yellow}}>{fmt(total)}</span></div>
+        </div>
+      </Card>
+      <Card style={{marginBottom:12}}>
+        <SectionLabel>Condiciones principales</SectionLabel>
+        {['Entrega en los plazos acordados.','Incluye revisiones según el plan.','Pago 50% para iniciar el proyecto.','Material final en formatos acordados.'].map((c,i)=>(
+          <div key={i} style={{display:'flex',alignItems:'flex-start',gap:8,marginBottom:8}}><Ico name="check" size={14} color={T.green} style={{marginTop:1,flexShrink:0}}/><span style={{fontSize:13,color:T.textMd}}>{c}</span></div>
+        ))}
+        <button onClick={()=>setShowConds(!showConds)} style={{background:'none',border:'none',cursor:'pointer',color:T.cyan,fontSize:12,fontWeight:700,padding:0,marginTop:4,fontFamily:'inherit'}}>
+          {showConds?'▲ Ocultar condiciones completas':'▼ Ver condiciones completas'}
+        </button>
+        {showConds&&<pre style={{fontSize:11,color:T.textFnt,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:'12px 0 0',padding:12,background:T.bgInset,borderRadius:T.radiusSm}}>{CONDITIONS}</pre>}
+      </Card>
+      <Card style={{marginBottom:12}}><InputField label="Nombre completo para la firma" value={sigName} onChange={setSigName} placeholder="Tu nombre y apellido"/></Card>
+      <Card style={{marginBottom:12}}>
+        <SectionLabel>Firma digital (dibujá con el dedo)</SectionLabel>
+        <div style={{border:`1px solid ${hasSig?'rgba(255,195,0,0.4)':T.borderMd}`,borderRadius:T.radiusSm,overflow:'hidden',background:'rgba(0,0,0,0.5)',position:'relative'}}>
+          <canvas ref={canvasRef} width={680} height={160} style={{width:'100%',height:140,display:'block',cursor:'crosshair'}}/>
+          {!hasSig&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}><span style={{fontSize:13,color:T.textFnt,opacity:0.6}}>Firmá aquí →</span></div>}
+        </div>
+        <button onClick={clearSig} style={{background:'none',border:`1px solid ${T.border}`,borderRadius:8,padding:'6px 12px',color:T.textMut,cursor:'pointer',fontSize:11,fontFamily:'inherit',marginTop:8}}>Limpiar firma</button>
+      </Card>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:12}}>
+        {[{icon:'whatsapp',color:'#25D366',bg:'rgba(37,211,102,0.08)',border:'rgba(37,211,102,0.25)',label:'WhatsApp',onClick:()=>window.open(generarWhatsApp(state),'_blank')},
+          {icon:'pay',color:T.violet,bg:'rgba(123,97,255,0.08)',border:'rgba(123,97,255,0.25)',label:'Pagar 50%',onClick:()=>{alert(`Adelanto: ${fmt(Math.round(total*0.5))}\n\nTe enviamos los datos por WhatsApp.`);window.open(generarWhatsApp(state),'_blank');}},
+          {icon:'download',color:T.cyan,bg:'rgba(0,229,255,0.06)',border:'rgba(0,229,255,0.22)',label:'PDF',onClick:()=>alert('Descarga de PDF disponible en la versión completa.')}
+        ].map(({icon,color,bg,border,label,onClick})=>(
+          <button key={label} onClick={onClick} style={{background:bg,border:`1px solid ${border}`,borderRadius:T.radiusSm,padding:'11px 8px',color,cursor:'pointer',fontSize:11,fontWeight:700,display:'flex',flexDirection:'column',alignItems:'center',gap:5,fontFamily:'inherit'}}>
+            <Ico name={icon} size={18} color={color}/>{label}
+          </button>
+        ))}
+      </div>
+      <GradBtn onClick={handleConfirm} style={{width:'100%'}}><Ico name="check" size={18}/> Confirmar presupuesto</GradBtn>
+    </div>
+  );
+};
+
+// ─── SCREEN: LISTO ────────────────────────────────────────────────────────────
+const ListoScreen = ({state,signed,onReset}) => {
+  const subtotal=state.items.reduce((s,i)=>s+i.precio*(i.qty||1),0);
+  const discAmt=state.descuento.valor>0?subtotal*(state.descuento.valor/100):0;
+  const total=subtotal-discAmt;
+  return (
+    <div className="fade-in" style={{maxWidth:480,margin:'0 auto',padding:'20px 16px 60px'}}>
+      <Card style={{textAlign:'center',padding:'32px 20px',marginBottom:14,position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:-60,left:'50%',transform:'translateX(-50%)',width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle,rgba(255,45,149,0.18) 0%,transparent 70%)',pointerEvents:'none'}}/>
+        <div style={{width:80,height:80,borderRadius:20,background:T.gradMain,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',boxShadow:'0 0 32px rgba(255,45,149,0.4)'}}>
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+        </div>
+        <div style={{fontSize:28,fontWeight:900,color:T.text,letterSpacing:'0.07em',marginBottom:4}}>NAWEMEDIA</div>
+        <div style={{fontSize:13,color:T.textMut,marginBottom:16}}>Producción y Diseño Audiovisual</div>
+        <Badge variant="success"><Ico name="check" size={13}/> Listo para enviar</Badge>
+      </Card>
+      <Card style={{marginBottom:12}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:T.textFnt,textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:4}}>Para</div>
+            <div style={{fontSize:18,fontWeight:800,color:T.text}}>{state.cliente.nombre||'—'}</div>
+            {state.cliente.empresa&&<div style={{fontSize:13,color:T.textMut,marginTop:2}}>{state.cliente.empresa}</div>}
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:10,fontWeight:700,color:T.textFnt,textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:4}}>Fecha</div>
+            <div style={{fontSize:13,color:T.textMd}}>{state.cliente.fecha}</div>
+          </div>
+        </div>
+      </Card>
+      <Card style={{marginBottom:12}}>
+        <SectionLabel>Servicios seleccionados</SectionLabel>
+        {state.items.map(item=>(
+          <div key={item.id} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:`1px solid ${T.border}`,fontSize:13}}>
+            <span style={{color:T.textMd}}>{item.nombre}</span>
+            <span style={{fontWeight:700,color:T.textMd}}>{fmt(item.precio*(item.qty||1))}</span>
+          </div>
+        ))}
+        <div style={{marginTop:12}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:T.textMut,marginBottom:6}}><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
+          {discAmt>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:T.green,marginBottom:6}}><span>{state.descuento.label}</span><span>− {fmt(discAmt)}</span></div>}
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:24,fontWeight:900,borderTop:`1px solid ${T.borderMd}`,paddingTop:12,marginTop:4}}><span style={{color:T.textMd}}>TOTAL</span><span style={{color:T.yellow}}>{fmt(total)}</span></div>
+        </div>
+      </Card>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:14}}>
+        {[{icon:'pay',color:T.violet,bg:'rgba(123,97,255,0.1)',border:'rgba(123,97,255,0.3)',label:'Pagar reserva',onClick:()=>{alert(`Adelanto: ${fmt(Math.round(total*0.5))}`);window.open(generarWhatsApp(state),'_blank');}},
+          {icon:'whatsapp',color:'#25D366',bg:'rgba(37,211,102,0.08)',border:'rgba(37,211,102,0.28)',label:'WhatsApp',onClick:()=>window.open(generarWhatsApp(state),'_blank')},
+          {icon:'download',color:T.cyan,bg:'rgba(0,229,255,0.06)',border:'rgba(0,229,255,0.22)',label:'Descargar PDF',onClick:()=>alert('PDF disponible en la versión completa.')}
+        ].map(({icon,color,bg,border,label,onClick})=>(
+          <button key={label} onClick={onClick} style={{background:bg,border:`1px solid ${border}`,borderRadius:T.radiusSm,padding:'12px 8px',color,cursor:'pointer',fontSize:11,fontWeight:700,display:'flex',flexDirection:'column',alignItems:'center',gap:5,fontFamily:'inherit'}}>
+            <Ico name={icon} size={20} color={color}/>{label}
+          </button>
+        ))}
+      </div>
+      <GradBtn variant="secondary" onClick={onReset} style={{width:'100%'}}>Crear nuevo presupuesto</GradBtn>
+    </div>
+  );
+};
+
+// ─── TWEAKS PANEL ─────────────────────────────────────────────────────────────
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "#FFC300",
+  "bgBase": "#05070D",
+  "showBanner": true,
+  "compactMode": false
+}/*EDITMODE-END*/;
+
+function useTweaks(defaults) {
+  const [values,setValues]=React.useState(defaults);
+  const setTweak=React.useCallback((keyOrEdits,val)=>{
+    const edits=typeof keyOrEdits==='object'&&keyOrEdits!==null?keyOrEdits:{[keyOrEdits]:val};
+    setValues(prev=>({...prev,...edits}));
+    window.parent.postMessage({type:'__edit_mode_set_keys',edits},'*');
+  },[]);
+  return [values,setTweak];
+}
+
+const TweaksPanelNW = ({tweaks,setTweak,onClose,onLoadSample,onReset,onGoto}) => (
+  <div className="twk-panel">
+    <div className="twk-hd">
+      <b>Tweaks</b>
+      <button className="twk-x" onClick={onClose}>✕</button>
+    </div>
+    <div className="twk-body">
+      <div className="twk-sect">Colores</div>
+      <div className="twk-row twk-row-h"><span className="twk-lbl">Color TOTAL</span><input type="color" className="twk-swatch" value={tweaks.accentColor} onChange={e=>setTweak('accentColor',e.target.value)}/></div>
+      <div className="twk-row twk-row-h"><span className="twk-lbl">Fondo base</span><input type="color" className="twk-swatch" value={tweaks.bgBase} onChange={e=>setTweak('bgBase',e.target.value)}/></div>
+      <div className="twk-sect">Visual</div>
+      <div className="twk-row twk-row-h">
+        <span className="twk-lbl">Banner urgente</span>
+        <button className="twk-toggle" data-on={tweaks.showBanner?'1':'0'} onClick={()=>setTweak('showBanner',!tweaks.showBanner)}><i/></button>
+      </div>
+      <div className="twk-sect">Navegación</div>
+      {[['servicios','Servicios'],['cotizacion','Cotización'],['datos','Datos'],['firma','Firma'],['listo','Listo']].map(([s,l])=>(
+        <button key={s} className="twk-btn-tweak" onClick={()=>onGoto(s)}>{l}</button>
+      ))}
+      <div className="twk-sect">Estado</div>
+      <button className="twk-btn-tweak" onClick={onLoadSample}>Cargar datos de prueba</button>
+      <button className="twk-btn-tweak" onClick={onReset}>Limpiar todo</button>
+    </div>
+  </div>
+);
+
+// ─── APP ROOT ─────────────────────────────────────────────────────────────────
+const STEP_MAP = {servicios:0,categoria:0,cotizacion:1,datos:1,firma:1,listo:2};
+
+function App() {
+  const [tweaks,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  const [screen,setScreen]=React.useState('servicios');
+  const [prevScreen,setPrevScreen]=React.useState('servicios');
+  const [selectedCat,setSelectedCat]=React.useState(null);
+  const [signed,setSigned]=React.useState(null);
+  const [tweakOpen,setTweakOpen]=React.useState(false);
+  const saved=loadState();
+  const [state,setStateRaw]=React.useState(saved||DEFAULT_STATE);
+
+  const setState=React.useCallback((updater)=>{
+    setStateRaw(prev=>{
+      const next=typeof updater==='function'?updater(prev):updater;
+      saveState(next);
+      return next;
+    });
+  },[]);
+
+  // Tweaks host protocol
+  React.useEffect(()=>{
+    const handler=(e)=>{
+      if(e.data?.type==='__activate_edit_mode') setTweakOpen(true);
+      if(e.data?.type==='__deactivate_edit_mode') setTweakOpen(false);
+    };
+    window.addEventListener('message',handler);
+    window.parent.postMessage({type:'__edit_mode_available'},'*');
+    return()=>window.removeEventListener('message',handler);
+  },[]);
+
+  const goTo=(s,prev=screen)=>{setPrevScreen(prev);setScreen(s);window.scrollTo(0,0);};
+  const goBack=()=>{setScreen(prevScreen||'servicios');window.scrollTo(0,0);};
+  const handleReset=()=>{setStateRaw(DEFAULT_STATE);saveState(DEFAULT_STATE);setSigned(null);setSelectedCat(null);setScreen('servicios');window.scrollTo(0,0);};
+  const handleLoadSample=()=>{
+    setState({
+      cliente:{nombre:'Carlos Mendoza',empresa:'Club Noise',fecha:new Date().toISOString().split('T')[0],email:'carlos@clubnoise.com'},
+      items:[
+        {id:'l2',nombre:'Pack visual LED',desc:'Pack de animaciones LED totales.',precio:80000,qty:1,catId:'led'},
+        {id:'l4',nombre:'Entrega urgente 24h',desc:'Producción y entrega en 24 horas.',precio:50000,qty:1,catId:'led'},
+      ],
+      descuento:{label:'',valor:0,codigo:''},
+      nota:'Evento el 15/06. Urgente.',
+    });
+  };
+
+  const subtotal=state.items.reduce((s,i)=>s+i.precio*(i.qty||1),0);
+  const discAmt=state.descuento.valor>0?subtotal*(state.descuento.valor/100):0;
+  const total=subtotal-discAmt;
+
+  const showFooter=['servicios','categoria','cotizacion'].includes(screen);
+  const footerDisabled=state.items.length===0;
+  const footerBtn=screen==='cotizacion'?'Continuar':'Ver cotización';
+  const handleFooterBtn=()=>{
+    if(screen==='cotizacion') goTo('datos','cotizacion');
+    else if(state.items.length>0) goTo('cotizacion',screen);
+  };
+
+  const renderScreen=()=>{
+    switch(screen){
+      case 'servicios': return <ServiciosScreen selectedItems={state.items} onCatSelect={cat=>{setSelectedCat(cat);goTo('categoria','servicios');}}/>;
+      case 'categoria': return <CategoriaScreen cat={selectedCat} selectedItems={state.items} onAdd={svc=>{if(!state.items.some(i=>i.id===svc.id))setState(p=>({...p,items:[...p.items,{...svc,qty:1}]}));}} onBack={goBack}/>;
+      case 'cotizacion': return <CotizacionScreen state={state} setState={setState} onBack={goBack}/>;
+      case 'datos': return <DatosScreen state={state} setState={setState} onContinue={()=>goTo('firma','datos')} onBack={goBack}/>;
+      case 'firma': return <FirmaScreen state={state} onConfirm={sigData=>{setSigned(sigData);goTo('listo','firma');}} onBack={goBack}/>;
+      case 'listo': return <ListoScreen state={state} signed={signed} onReset={handleReset}/>;
+      default: return null;
+    }
+  };
+
+  return (
+    <div style={{minHeight:'100vh',background:tweaks.bgBase}}>
+      <AppHeader onMenuClick={()=>setTweakOpen(true)}/>
+      {screen!=='listo'&&(
+        <div style={{background:tweaks.bgBase,borderBottom:`1px solid ${T.border}`}}>
+          <StepperProgress step={STEP_MAP[screen]??0}/>
+        </div>
+      )}
+      <main style={{paddingTop:4}}>{renderScreen()}</main>
+      {showFooter&&<StickyFooter total={total} btnLabel={footerBtn} onBtn={handleFooterBtn} disabled={footerDisabled}/>}
+      {tweakOpen&&(
+        <TweaksPanelNW
+          tweaks={tweaks}
+          setTweak={setTweak}
+          onClose={()=>{setTweakOpen(false);window.parent.postMessage({type:'__edit_mode_dismissed'},'*');}}
+          onLoadSample={handleLoadSample}
+          onReset={handleReset}
+          onGoto={(s)=>{setScreen(s);window.scrollTo(0,0);}}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
+    <rect width="200" height="140" fill="#05070D"/>
+    <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FF2D95"/><stop offset="50%" stop-color="#FF5C39"/><stop offset="100%" stop-color="#FFC300"/></linearGradient></defs>
+    <rect x="60" y="28" width="80" height="80" rx="18" fill="url(#tg)" opacity="0.9"/>
+    <polygon points="82,50 122,68 82,86" fill="white"/>
+    <text x="100" y="124" text-anchor="middle" fill="#8B95AA" font-size="9" font-family="sans-serif">NAWEMEDIA</text>
+  </svg>
+</template>
+</body>
+</html>
